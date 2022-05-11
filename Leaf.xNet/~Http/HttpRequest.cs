@@ -3030,14 +3030,16 @@ namespace Leaf.xNet
             if (!disposing || TcpClient == null)
                 return;
 
-            TcpClient.Close();
-            TcpClient = null;
-
+            ClientStream?.Flush();
             ClientStream?.Dispose();
             ClientStream = null;
-            
+
+            ClientNetworkStream?.Flush();
             ClientNetworkStream?.Dispose();
             ClientNetworkStream = null;
+
+            TcpClient.Close();
+            TcpClient = null;
 
             _keepAliveRequestCount = 0;
         }

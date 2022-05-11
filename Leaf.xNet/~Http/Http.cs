@@ -21,12 +21,8 @@ namespace Leaf.xNet
         /// </summary>
         public const string NewLine = "\r\n";
 
-        /// <summary>
-        /// Метод делегата, который принимает все сертификаты SSL.
-        /// </summary>
-        public static readonly RemoteCertificateValidationCallback AcceptAllCertificationsCallback;
-
         #endregion
+
 
         #region Статические поля (внутренние)
 
@@ -82,7 +78,6 @@ namespace Leaf.xNet
 
         #endregion
 
-        static Http() => AcceptAllCertificationsCallback = AcceptAllCertifications;
 
         #region Статические методы (открытые)
 
@@ -352,11 +347,6 @@ namespace Leaf.xNet
 
 
         #region Статические методы (закрытые)
-
-        private static bool AcceptAllCertifications(object sender,
-            System.Security.Cryptography.X509Certificates.X509Certificate certification,
-            System.Security.Cryptography.X509Certificates.X509Chain chain,
-            SslPolicyErrors sslPolicyErrors) => true;
 
         private static string RandomWindowsVersion()
         {

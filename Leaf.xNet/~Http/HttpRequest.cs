@@ -11,6 +11,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using Leaf.xNet.Services.Captcha;
+using Org.BouncyCastle.Crypto.Tls;
+using Org.BouncyCastle.Security;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable UnusedMember.Global
@@ -251,18 +253,11 @@ namespace Leaf.xNet
         /// <value>Значение по умолчанию — <see langword="null"/>.</value>
         public ProxyClient Proxy { get; set; }
 
-
-        /// <summary>
-        /// Возвращает или задает возможные протоколы SSL.
-        /// По умолчанию используется: <value>SslProtocols.Tls | SslProtocols.Tls12 | SslProtocols.Tls11</value>.
-        /// </summary>
-        public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls | SslProtocols.Tls12 | SslProtocols.Tls11;
-
         /// <summary>
         /// Возвращает или задает метод делегата, вызываемый при проверки сертификата SSL, используемый для проверки подлинности.
         /// </summary>
         /// <value>Значение по умолчанию — <see langword="null"/>. Если установлено значение по умолчанию, то используется метод, который принимает все сертификаты SSL.</value>
-        public RemoteCertificateValidationCallback SslCertificateValidatorCallback { get; set; }
+        public TlsClient TlsClient { get; set; } = new CustomTlsClient();
 
         /// <summary>
         /// Разрешает устанавливать пустые значения заголовкам.
@@ -3495,12 +3490,9 @@ namespace Leaf.xNet
             {
                 try
                 {
-                    var sslStream = SslCertificateValidatorCallback == null
-                        ? new SslStream(ClientNetworkStream, false, Http.AcceptAllCertificationsCallback)
-                        : new SslStream(ClientNetworkStream, false, SslCertificateValidatorCallback);
-
-                    sslStream.AuthenticateAsClient(address.Host, new X509CertificateCollection(), SslProtocols, false);
-                    ClientStream = sslStream;
+                    TlsClientProtocol tlsStream = new TlsClientProtocol(ClientNetworkStream, new SecureRandom());
+                    tlsStream.Connect(TlsClient);
+                    ClientStream = tlsStream.Stream;
                 }
                 catch (Exception ex)
                 {
@@ -3754,4 +3746,34 @@ namespace Leaf.xNet
 
         #endregion
     }
+
+    #region TlsClasses
+
+    internal class CustomTlsClient : DefaultTlsClient
+    {
+        public override TlsAuthentication GetAuthentication()
+        {
+            return new CustomTlsAuthentication();
+        }
+
+        public override int[] GetCipherSuites()
+        {
+            //TLS 1.2 ciphers with SHA-2 for all platforms
+            return new int[] { CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256, CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256, CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256, CipherSuite.TLS_RSA_WITH_AES_256_GCM_SHA384, CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, CipherSuite.DRAFT_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256, CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384, CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, CipherSuite.DRAFT_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256, CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, CipherSuite.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, CipherSuite.DRAFT_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256, CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, CipherSuite.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256, CipherSuite.TLS_DH_anon_WITH_AES_256_CBC_SHA256, CipherSuite.TLS_DH_anon_WITH_AES_128_CBC_SHA256 };
+        }
+    }
+
+    internal class CustomTlsAuthentication : TlsAuthentication
+    {
+        public TlsCredentials GetClientCredentials(CertificateRequest certificateRequest)
+        {
+            return null;
+        }
+
+        public void NotifyServerCertificate(Certificate serverCertificate)
+        {
+        }
+    }
+
+    #endregion
 }

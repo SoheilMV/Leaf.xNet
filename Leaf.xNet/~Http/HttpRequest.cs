@@ -257,7 +257,7 @@ namespace Leaf.xNet
         /// Возвращает или задает метод делегата, вызываемый при проверки сертификата SSL, используемый для проверки подлинности.
         /// </summary>
         /// <value>Значение по умолчанию — <see langword="null"/>. Если установлено значение по умолчанию, то используется метод, который принимает все сертификаты SSL.</value>
-        public TlsClient TlsClient { get; set; } = new CustomTlsClient();
+        public TlsClient TlsClient { get; set; }
 
         /// <summary>
         /// Разрешает устанавливать пустые значения заголовкам.
@@ -268,7 +268,7 @@ namespace Leaf.xNet
         /// Следует ли отправлять временные заголовки (добавленные через <see cref="AddHeader(string,string)"/>) переадресованным запросам.
         /// По умолчанию <see langword="true"/>.
         /// </summary>
-        public bool KeepTemporaryHeadersOnRedirect { get; set; } = true;
+        public bool KeepTemporaryHeadersOnRedirect { get; set; }
 
         /// <summary>
         /// Включить отслеживание заголовков в промежуточных запросах (переадресованные) и сохранять их в <see cref="HttpResponse.MiddleHeaders"/>.
@@ -278,12 +278,12 @@ namespace Leaf.xNet
         /// <summary>
         /// Заголовок AcceptEncoding. Стоит обратить внимание что не все сайты принимают версию с пробелом: "gzip, deflate".
         /// </summary>
-        public string AcceptEncoding { get; set; } = "gzip,deflate";
+        public string AcceptEncoding { get; set; }
 
         /// <summary>
         /// Dont throw exception when received cookie name is invalid, just ignore.
         /// </summary>
-        public bool IgnoreInvalidCookie { get; set; } = false;
+        public bool IgnoreInvalidCookie { get; set; }
 
         #region Поведение
 
@@ -729,18 +729,6 @@ namespace Leaf.xNet
         public HttpRequest()
         {
             Init();
-        }
-        
-        static HttpRequest()
-        {
-            // It's a fix of HTTPs Proxies SSL issue
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-            ServicePointManager.ServerCertificateValidationCallback += ServerCertificateValidationCallback;
-        }
-        
-        private static bool ServerCertificateValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslpolicyerrors)
-        {
-            return true;
         }
 
         /// <summary>
@@ -3072,11 +3060,17 @@ namespace Leaf.xNet
 
         private void Init()
         {
+            KeepTemporaryHeadersOnRedirect = true;
+            AcceptEncoding = "gzip,deflate";
+            IgnoreInvalidCookie = false;
+
             KeepAlive = true;
             AllowAutoRedirect = true;
             _tempAllowAutoRedirect = AllowAutoRedirect;
 
             EnableEncodingContent = true;
+
+            TlsClient = new CustomTlsClient();
 
             Response = new HttpResponse(this);
         }
